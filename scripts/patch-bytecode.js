@@ -95,6 +95,21 @@ const POOL_TRANSLATIONS = new Map([
   // 主表精选译文（37 字符）超过 --betas 帮助描述的池占位（60B narrow，预算 30），
   // tooLong 会整条跳过；池内用预算内的短译文，主表措辞留给其他展示面。
   ["Beta headers to include in API requests (API key users only)", "API 请求的 Beta headers（仅 key 用户）"],
+  // 以下主表为测试守护的精选措辞，但超出 slash 菜单池占位预算（narrow=原文字符数一半），
+  // 池内用预算内短译文覆盖，主表措辞不动。
+  ["Manage MCP servers", "管理 MCP 服务"],
+  ["Copy Claude's last response to clipboard (or /copy N for the Nth-latest)", "复制最后回复到剪贴板（/copy N 取第 N 条）"],
+  ["Manage allow and deny tool permission rules", "管理工具权限 allow/deny 规则"],
+  ["Manage Claude Code plugins", "管理插件"],
+  ["Create and manage scheduled remote Claude Code agents", "管理定时运行的远程 Agent"],
+  ["Order Claude Code stickers", "订购贴纸"],
+  ["Install the Claude Slack app", "安装 Slack 应用"],
+  ["Listen to Claude FM lo-fi radio", "收听 Claude FM"],
+  ["Stop this background session; transcript and worktree are kept", "停止后台会话；保留 transcript 与 worktree"],
+  ["Open Claude in Chrome settings", "Chrome 集成设置"],
+  ["Set the AI model for Claude Code", "设置会话 AI 模型"],
+  ["Set the terminal UI renderer (default | fullscreen)", "设置终端 UI 渲染器"],
+  ["Toggle brief-only mode", "切换 brief 模式"],
 ]);
 
 function patchStringPool(buffer, translations, { mainTableOnly = false } = {}) {
