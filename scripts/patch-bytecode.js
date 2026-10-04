@@ -172,6 +172,21 @@ const POOL_TRANSLATIONS = new Map([
   ["Start the Claude Code MCP server", "启动 MCP 服务"],
   ["Manage Claude Code marketplaces", "管理插件市场"],
   ["Print the raw bugs.json payload instead of formatted findings", "输出原始 bugs.json，不格式化"],
+  // 2.1.289 实际终端截图：以下是 Bun 池中的显示串。新版内置命令描述与主表
+  // 的旧文案并非同一原文；statusline / 计费标签还受 narrow 槽宽限制。
+  // 仅补充完整池条目或可确认的显示片段，不改命令名、参数及 Hook 协议字段。
+  ["API Usage Billing", "API 计费"],
+  ["Set up Claude Code's status line UI", "设置 Claude 状态栏"],
+  ["Author or improve the run-<unit> skill - a per-project skill that tells agents how to build, launch, and drive this project's app. Use when the user asks to set up the project, get it running, write run instructions, or verify build/run steps work from a clean environment.", "编写或改进项目级 run-<unit> skill，说明如何构建、启动和操作应用；用于项目设置、运行说明及从干净环境验证构建与运行。"],
+  ["Review the changed code for reuse, simplification, efficiency, and altitude cleanups, then apply the fixes. Quality only — it does not hunt for bugs; use /code-review for that.", "审查改动代码的复用、简化、效率及层级问题并应用修正。只做质量清理，不查缺陷；查缺陷请用 /code-review。"],
+  ["Use this skill to configure the Claude Code harness via settings.json. Automated behaviors (\"from now on when X\", \"each time X\", \"whenever X\", \"before/after X\") require hooks configured in settings.json - the harness executes these, not Claude, so memory/preferences cannot fulfill them. Also use for: permissions (\"allow X\", \"add permission\", \"move permission to\"), env vars (\"set X=Y\"), hook troubleshooting, or any changes to settings.json/settings.local.json files. Examples: \"allow npm commands\", \"add bq permission to global settings\", \"move permission to user settings\", \"set DEBUG=true\", \"when claude stops show X\". For simple settings like theme/model, suggest the /config command.", "通过 settings.json 配置 Claude Code。定时或条件动作须用 Hook，不能只靠记忆或偏好。也用于权限、环境变量、Hook 排障，以及修改 settings.json 或 settings.local.json；主题和模型等简单设置请用 /config。"],
+  ["Verify that a code change actually does what it's supposed to by exercising it end-to-end and observing behavior — drive the affected flow, not just tests or typecheck. Run before committing nontrivial changes; bootstraps this repo's project verify skill if none exists yet. Don't invoke it on a diff that only touches tests, docs, or other code with no runtime surface to drive (a change to product source always has one) — there's nothing to observe.", "端到端操作受影响流程并观察行为，确认代码改动符合预期，不能只跑测试或类型检查。非平凡改动提交前应运行；如缺少项目验证 skill，会先建立。仅改测试、文档等无运行界面的内容时无需调用。"],
+  ["Reference for writing a ", "编写 "],
+  [" tool script (script API and gotchas, resume, quality patterns, worked examples). Load before authoring a script for a workflow the user already opted into; it does not itself authorize running one.", " 工具脚本参考（API、恢复、质量要点和示例）。仅用于用户已选择的流程；查看说明不代表授权执行。"],
+  ["for agents", "代理"],
+  ["UserPromptSubmit operation blocked by hook:\n", "UserPromptSubmit 已拦截：\n"],
+  ["UserPromptExpansion operation blocked by hook:\n", "扩展输入被 Hook 拦截：\n"],
+  ["\n\nOriginal prompt: ", "\n\n原始输入："],
 ]);
 
 function patchStringPool(buffer, translations, { mainTableOnly = false } = {}) {
@@ -328,7 +343,7 @@ function main() {
   process.stdout.write(flags.includes("--json") ? JSON.stringify(result) + "\n" : String(result.patched) + "\n");
 }
 
-module.exports = { patchStringPool, patchBinary, restoreBinary };
+module.exports = { patchStringPool, patchBinary, restoreBinary, POOL_TRANSLATIONS };
 if (require.main === module) {
   try { main(); } catch (error) {
     process.stderr.write(`bytecode patch: ${error.message}\n`);

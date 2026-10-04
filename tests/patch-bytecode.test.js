@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { patchStringPool } = require("../scripts/patch-bytecode.js");
+const { patchStringPool, POOL_TRANSLATIONS } = require("../scripts/patch-bytecode.js");
 
 function entry(text, wide = false) {
   const header = Buffer.alloc(8);
@@ -12,6 +12,33 @@ function entry(text, wide = false) {
   header.writeUInt32LE(0x11223344, 4);
   return Buffer.concat([header, Buffer.from(text, wide ? "utf16le" : "latin1")]);
 }
+
+test("2.1.289 screenshot residual UI text fits its real pool slots", () => {
+  const terms = [
+    ["API Usage Billing", false],
+    ["Set up Claude Code's status line UI", false],
+    ["Author or improve the run-<unit> skill -", false],
+    ["Review the changed code for reuse,", true],
+    ["Use this skill to configure the Claude Code harness", false],
+    ["Verify that a code change actually", true],
+    ["Reference for writing a ", false],
+    [" tool script (script API and gotchas,", false],
+    ["for agents", false],
+    ["UserPromptSubmit operation blocked by hook:\n", false],
+    ["UserPromptExpansion operation blocked by hook:\n", false],
+    ["\n\nOriginal prompt: ", false],
+  ];
+  for (const [prefix, wide] of terms) {
+    const matches = [...POOL_TRANSLATIONS].filter(([en]) => en.startsWith(prefix));
+    assert.equal(matches.length, 1, `one pool entry for ${prefix}`);
+    const [en, zh] = matches[0];
+    const budget = en.length * (wide ? 2 : 1);
+    assert.ok(Buffer.byteLength(zh, "utf16le") <= budget, `${prefix} must fit ${budget} bytes`);
+    const pool = entry(en, wide);
+    assert.equal(patchStringPool(pool, []).patched, 1, `${prefix} must be patched`);
+    assert.equal(pool.subarray(8, 8 + Buffer.byteLength(zh, "utf16le")).toString("utf16le"), zh);
+  }
+});
 
 test("bytecode translation preserves adjacent entries and uses UTF-16 code units", () => {
   const next = entry("untouched");
