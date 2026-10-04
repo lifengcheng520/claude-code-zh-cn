@@ -1254,7 +1254,9 @@ function write-metadata {
         $sourceRepo = $ScriptDir
     }
     if ($sourceRepo) {
-        "$sourceRepo" | Out-File -FilePath $SourceRepoFile -Encoding ascii -NoNewline
+        # 源码路径可能包含中文；ASCII 会把路径写成 ??，导致后续更新检查找不到仓库。
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($SourceRepoFile, $sourceRepo, $utf8NoBom)
     }
     $timestamp = [int][double]::Parse((Get-Date (Get-Date).ToUniversalTime() -UFormat %s))
     "$timestamp" | Out-File -FilePath $LastUpdateCheckFile -Encoding ascii -NoNewline

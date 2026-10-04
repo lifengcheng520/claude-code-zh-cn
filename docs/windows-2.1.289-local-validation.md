@@ -35,7 +35,13 @@
 
 截图还揭示了首轮补丁之外的真实残留：新版内置 `/run-skill-generator`、`/simplify`、`/update-config`、`/verify` 与 `/workflow-authoring` 菜单说明，状态栏 `API Usage Billing`、`for agents`，以及 Hook 拦截提示。它们已按 2.1.289 原始 Bun 池的完整条目补充短译文，没有修改命令名和 Hook 协议字段。
 
-从原版 SHA-256 为 `bcc6d9117aec30ad9414490302a25414359c871f5647e32e49b055c92bf84e0b` 的英文备份复制隔离 EXE 后，新规则在该副本上命中 **1324 处**（首轮为 1312），`--version` 返回 2.1.289，帮助页自检通过；副本 SHA-256 为 `3486fc2246d83c6961e55fac995f8c25c2b310794e6608cbdc2e7aa3b3570991`。这不是本机在用 EXE 的指纹，也不代表已重启后的真实交互验收。字节码测试组 22 项全部通过。
+从原版 SHA-256 为 `bcc6d9117aec30ad9414490302a25414359c871f5647e32e49b055c92bf84e0b` 的英文备份复制隔离 EXE 后，新规则在该副本上命中 **1324 处**（首轮为 1312），`--version` 返回 2.1.289，帮助页自检通过；副本 SHA-256 为 `3486fc2246d83c6961e55fac995f8c25c2b310794e6608cbdc2e7aa3b3570991`。此阶段还不能据此宣称真实交互已验收；字节码测试组 22 项全部通过。
+
+### 2026-10-05 本机更新后核对
+
+用户关闭全部 Claude Code 终端后，用本地安装入口更新实际插件与启动器，并从已校验的英文备份重新补丁。当前在用 EXE 的 SHA-256 为 `3486fc2246d83c6961e55fac995f8c25c2b310794e6608cbdc2e7aa3b3570991`，与隔离副本一致；receipt 记录 1324 处、revision `f4d514c94e44a3f7`，原版备份指纹不变。启动器连续两次运行 `--help` 均输出中文，前后 EXE 指纹不变；`--version` 为 2.1.289。doctor 保留 `layer4Status=ok`，细分为 `layer4State.code=partial`。
+
+更新前另行保存了本机插件、设置、启动器、EXE、英文备份与 receipt。重装后其他 Hook、非汉化设置及正式插件注册状态均保持原样。修正安装元数据的 ASCII 路径损坏后，`.source-repo` 现以无 BOM UTF-8 指向实际的中文路径。**尚未复验新进程里的交互菜单、计划模式和 Hook 拦截画面；需由用户在新会话观察。**
 
 型号标识 `deepseek-flash[1M]` 与按键名 `shift+tab` 保持原样。`with max effort`、`(shift+tab to cycle)` 等动态组合仍未证明可安全原位替换，未作为本次完成项。
 
