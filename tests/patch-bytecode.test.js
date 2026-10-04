@@ -86,6 +86,32 @@ test("built-in verb fits within a shorter bucket (Baked 5B -> 烤了)", () => {
   assert.equal(pool.subarray(8, 12).toString("utf16le"), "烤了");
 });
 
+test("2.1.289 short UI translations respect narrow Bun pool slots", () => {
+  for (const source of [
+    "Enable Claude in Chrome integration",
+    "Disable Claude in Chrome integration",
+    "Not now",
+    "See ya!",
+    "MCP servers",
+  ]) {
+    const pool = entry(source);
+    const next = entry("untouched");
+    const joined = Buffer.concat([pool, next]);
+    const result = patchStringPool(joined, []);
+    assert.equal(result.patched, 1, source);
+    assert.ok(joined.readUInt32LE(0) * 2 <= source.length, source);
+    assert.deepEqual(joined.subarray(pool.length), next, source);
+  }
+});
+
+test("2.1.289 model picker description fits its original pool slot", () => {
+  const translations = require("../cli-translations.json");
+  const source = "Switch between Claude models. Your pick becomes the default for new sessions. For other/previous model names, specify with --model.";
+  const pool = entry(source);
+  assert.equal(patchStringPool(pool, translations).patched, 1);
+  assert.ok(pool.readUInt32LE(0) * 2 <= source.length);
+});
+
 test("master table wins over built-in extras on key collision", () => {
   const pool = entry("Churned");
   assert.equal(patchStringPool(pool, [{ en: "Churned", zh: "自定义" }]).patched, 1);
