@@ -43,7 +43,7 @@
 
 更新前另行保存了本机插件、设置、启动器、EXE、英文备份与 receipt。重装后其他 Hook、非汉化设置及正式插件注册状态均保持原样。修正安装元数据的 ASCII 路径损坏后，`.source-repo` 现以无 BOM UTF-8 指向实际的中文路径。
 
-随后在 `D:\程序\pyq` 的新 TTY 会话中，实际启动已安装的 2.1.289：启动页的 `API Usage Billing` 显示为 `API 计费`；输入 `/run` 后，`/run` 与 `/run-skill-generator` 菜单说明均显示中文。用 Shift+Tab 切换权限模式时，状态栏仍出现 `auto mode on`、`manual mode on`、`plan mode on (shift+tab to cycle)` 等英文。这证明池内命中不能代表该渲染路径全部生效。另在隔离副本上等字节长度地替换源码镜像中的 `plan mode on`，版本/帮助自检虽然通过，真实交互仍未改变；未将这项无效实验纳入发布补丁，也未修改本机 EXE。新版 Hook 拦截画面仍需用户在日常新会话中复验。
+随后在 `D:\程序\pyq` 的新 TTY 会话中，实际启动已安装的 2.1.289：启动页的 `API Usage Billing` 显示为 `API 计费`；输入 `/run` 后，`/run` 与 `/run-skill-generator` 菜单说明均显示中文。新会话输入 `/chinese` 时，Hook 拦截标题显示 `UserPromptSubmit 已拦截：`，尾行显示 `原始输入：/chinese`，不再是截图里的整句英文。用 Shift+Tab 切换权限模式时，状态栏仍出现 `auto mode on`、`manual mode on`、`plan mode on (shift+tab to cycle)` 等英文。这证明池内命中不能代表该渲染路径全部生效。另在隔离副本上等字节长度地替换源码镜像中的 `plan mode on`，版本/帮助自检虽然通过，真实交互仍未改变；未将这项无效实验纳入发布补丁，也未修改本机 EXE。
 
 型号标识 `deepseek-flash[1M]` 与按键名 `shift+tab` 保持原样。`with max effort`、`(shift+tab to cycle)` 等动态组合仍未证明可安全原位替换，未作为本次完成项。
 
