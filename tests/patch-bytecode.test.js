@@ -43,6 +43,11 @@ function entry(text, wide = false) {
 
 test("2.1.289 screenshot residual UI text fits its real pool slots", () => {
   const terms = [
+    ["Grant or revoke Claude agent access", false],
+    ["Push a React design system to claude.ai/design.", false],
+    ["Health-check the user's Claude Code setup", true],
+    ["Scan your transcripts for common read-only", false],
+    ["Make a mod: a live pane, band, status line", false],
     ["API Usage Billing", false],
     ["Set up Claude Code's status line UI", false],
     ["Author or improve the run-<unit> skill -", false],
