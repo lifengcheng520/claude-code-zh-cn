@@ -7,7 +7,7 @@ const path = require("node:path");
 const { patchStringPool, POOL_TRANSLATIONS, rewriteWin289DisplaySource, patchWin289DisplayModules } = require("../scripts/patch-bytecode.js");
 
 test("2.1.289 display source rewrites are anchored and keep identifiers", () => {
-  const input = 'const Le=D?"":" on"; action:"cycle",parens:!0,format:{keyCase:"lower"} action:"cycle",parens:!0,format:{keyCase:"lower"} const Eo=E?"to go back":"for agents"; action:"interrupt",format:{keyCase:"lower"} zn==="xhigh"?"xHigh":zn?sUt(zn):""," ","effort" zn===as?" (default)":"" action:"adjust" action:H?"set as default":"confirm" action:H?"set as default":"confirm" action:"use this session only" action:"list" action:"list" ' + 'action:"cancel" '.repeat(13) + 'fallback:"Esc",description:"cancel" '.repeat(6) + '"Select model" "[Pasted text #"';
+  const input = 'tag:Ie?"dynamic workflow":void 0 const Le=D?"":" on"; action:"cycle",parens:!0,format:{keyCase:"lower"} action:"cycle",parens:!0,format:{keyCase:"lower"} const Eo=E?"to go back":"for agents"; action:"interrupt",format:{keyCase:"lower"} zn==="xhigh"?"xHigh":zn?sUt(zn):""," ","effort" zn===as?" (default)":"" action:"adjust" action:H?"set as default":"confirm" action:H?"set as default":"confirm" action:"use this session only" action:"list" action:"list" ' + 'action:"cancel" '.repeat(13) + 'fallback:"Esc",description:"cancel" '.repeat(6) + '"Select model" "[Pasted text #"';
   const output = rewriteWin289DisplaySource(input, "chunk-bmzxbn1n.js", [
     { en: "Select model", zh: "选择模型" },
     { en: "[Pasted text #", zh: "[粘贴文本 #" },
@@ -41,8 +41,27 @@ function entry(text, wide = false) {
   return Buffer.concat([header, Buffer.from(text, wide ? "utf16le" : "latin1")]);
 }
 
+test("English switching command descriptions are Chinese without changing Hook contracts", () => {
+  for (const name of ["english", "en"]) {
+    const source = fs.readFileSync(path.join(__dirname, "../plugin/commands", `${name}.md`), "utf8");
+    assert.match(source, /description: 切换 Claude Code 为英文/);
+    assert.ok(source.includes(`name: ${name}\n`) || source.includes(`name: ${name}\r\n`));
+    assert.match(source, /This command is handled by the claude-code-zh-cn UserPromptSubmit hook/);
+  }
+});
+
 test("2.1.289 screenshot residual UI text fits its real pool slots", () => {
   const terms = [
+    ["Review the current diff, or a PR", true],
+    ["); with no level given", false],
+    ["Toggle the diff panel", false],
+    ["Toggle fast mode (", false],
+    ["Reference for the Claude API", true],
+    ["TRIGGER — read BEFORE", true],
+    ["SKIP only when another provider", true],
+    ["Use this skill whenever you are about to create ANY", true],
+    ["Deep research harness", true],
+    ["Ctrl+Y to paste deleted text", false],
     ["Grant or revoke Claude agent access", false],
     ["Push a React design system to claude.ai/design.", false],
     ["Health-check the user's Claude Code setup", true],

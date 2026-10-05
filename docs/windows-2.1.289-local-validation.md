@@ -85,3 +85,10 @@
 用户确认关闭后，核对无 Claude 进程，再备份当前插件、设置、注册记录、启动器、EXE、英文备份与 receipt，使用本地安装器更新。实际 EXE SHA-256 与上述 2.21.2 候选一致；receipt revision 为 `56abb6ae8ffce261`、池内替换 1330 处。英文备份指纹不变，settings.json 解析后的内容与安装前完全一致。doctor 返回 `ok=true`、`layer4Status=ok`、`layer4State.code=partial`、`languageMode=zh-CN`。
 
 从本机安装入口启动真实 TTY 会话，分别输入命令前缀观察菜单，确认上述五项均显示中文，状态栏继续保持中文；验证后退出测试会话，没有执行菜单中的实际命令。
+
+
+## 2.21.3 三张菜单截图跟进
+
+隔离 EXE 中逐项验证 `/code-review`、`/diff`、`/fast`、`/claude-api`、`/dataviz`、`/deep-research` 菜单说明显示中文；`[dynamic workflow]` 已在显示结构内改为 `[动态工作流]`，Ctrl+Y 提示改为中文。仅输入命令前缀观察菜单，未执行这些命令。`/english` 和 `/en` 的插件命令说明已修改，Hook 标识、命令名和禁用模型调用配置保留；实际安装后的用户命令副本待重装验证。
+
+候选 EXE SHA-256：`a9d25c159f168517e9cda23b36a1a26d9ac7e70e9755d1c39155f1d4ddd8f9c5`；池内替换 1340 处、5 个源码模块 / 355 处。版本与帮助自检通过。当前用户 Claude 会话仍在运行，尚未替换本机 EXE，等待退出后安装。技术名称、命令名及模型 ID 不翻译，未宣称所有菜单和动态内容均已覆盖。
