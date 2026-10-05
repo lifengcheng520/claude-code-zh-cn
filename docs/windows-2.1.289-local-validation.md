@@ -79,3 +79,9 @@
 原版 SHA-256 保持不变；候选 EXE SHA-256 为 `9aea030d37be0a39a2dcce1962c83b26268881b7f745eacaa239d4c6aab2a10f`，池内替换 1330 处，源码模块仍为 5 个 / 354 处。版本与帮助自检通过，字节码回归 24 项通过。此刻本机仍检测到 Claude 进程，未更新在用 EXE；待用户退出后安装。
 
 本轮只确认上述五项；菜单搜索同时可见 `/dataviz` 等其他说明，以及清空输入后的 `Ctrl+Y to paste deleted text` 仍有英文，不据此声称全部命令菜单已覆盖。
+
+### 2.21.2 本机安装验收
+
+用户确认关闭后，核对无 Claude 进程，再备份当前插件、设置、注册记录、启动器、EXE、英文备份与 receipt，使用本地安装器更新。实际 EXE SHA-256 与上述 2.21.2 候选一致；receipt revision 为 `56abb6ae8ffce261`、池内替换 1330 处。英文备份指纹不变，settings.json 解析后的内容与安装前完全一致。doctor 返回 `ok=true`、`layer4Status=ok`、`layer4State.code=partial`、`languageMode=zh-CN`。
+
+从本机安装入口启动真实 TTY 会话，分别输入命令前缀观察菜单，确认上述五项均显示中文，状态栏继续保持中文；验证后退出测试会话，没有执行菜单中的实际命令。
