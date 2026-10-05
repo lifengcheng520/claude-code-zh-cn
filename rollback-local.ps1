@@ -1,5 +1,5 @@
 ﻿#!/usr/bin/env pwsh
-# 仅用于本机 2.21.0 安装前创建的私人备份；不包含在安装 ZIP 的备份数据中。
+# 仅用于本机 2.21.1 安装前创建的私人备份；不包含在安装 ZIP 的备份数据中。
 param([Parameter(Mandatory = $true)][string]$BackupDirectory)
 
 $ErrorActionPreference = "Stop"
@@ -40,7 +40,7 @@ if ($state.launcherHashes) {
     }
 }
 $version = (Get-Content -LiteralPath (Join-Path $pluginPath "manifest.json") -Raw -Encoding UTF8 | ConvertFrom-Json).version
-if ($version -ne "2.21.0") { throw "插件已被更新为 $version；没有覆盖新插件" }
+if ($version -ne "2.21.1") { throw "插件已被更新为 $version；没有覆盖新插件" }
 foreach ($pair in @(@("claude.exe",$state.targetHashBefore),@("claude.exe.zh-cn-backup",$state.sourceHash))) {
     $file = Join-Path $backup $pair[0]
     if (-not (Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $pair[1]) {
@@ -66,7 +66,7 @@ Copy-Item -LiteralPath (Join-Path $backup "claude.exe.zh-cn-backup") -Destinatio
 Copy-Item -LiteralPath (Join-Path $backup "claude.exe.zh-cn-repair.json") -Destination ($target + ".zh-cn-repair.json") -Force
 Copy-Item -LiteralPath (Join-Path $backup "settings.json") -Destination $settingsPath -Force
 Copy-Item -LiteralPath (Join-Path $backup "installed_plugins.json") -Destination (Join-Path (Split-Path -Parent $pluginPath) "installed_plugins.json") -Force
-$retired = Join-Path (Split-Path -Parent $pluginPath) ("claude-code-zh-cn.2.21.0-retired-" + (Get-Date -Format "yyyyMMddHHmmss"))
+$retired = Join-Path (Split-Path -Parent $pluginPath) ("claude-code-zh-cn.2.21.1-retired-" + (Get-Date -Format "yyyyMMddHHmmss"))
 if ([System.IO.Path]::GetFullPath($retired).StartsWith([System.IO.Path]::GetFullPath((Split-Path -Parent $pluginPath)) + [System.IO.Path]::DirectorySeparatorChar) -ne $true) {
     throw "插件回退目标路径无效"
 }
@@ -79,9 +79,9 @@ $commandRoot = Join-Path $env:USERPROFILE ".claude\commands"
 $ownedText = "This command is handled by the claude-code-zh-cn UserPromptSubmit hook"
 foreach ($name in @("chinese","english","zh","en")) {
     $commandFile = Join-Path $commandRoot ($name + ".md")
-    if ((Test-Path -LiteralPath $commandFile) -and
+    if (-not $state.preserveCommandStubs -and (Test-Path -LiteralPath $commandFile) -and
         [System.IO.File]::ReadAllText($commandFile, [System.Text.Encoding]::UTF8).Contains($ownedText)) {
         Remove-Item -LiteralPath $commandFile -Force
     }
 }
-Write-Host "已还原安装前的终端程序、插件、Hook、设置和启动器；2.21.0 插件副本保存在 $retired"
+Write-Host "已还原安装前的终端程序、插件、Hook、设置和启动器；2.21.1 插件副本保存在 $retired"

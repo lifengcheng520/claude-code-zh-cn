@@ -4,7 +4,35 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { patchStringPool, POOL_TRANSLATIONS } = require("../scripts/patch-bytecode.js");
+const { patchStringPool, POOL_TRANSLATIONS, rewriteWin289DisplaySource, patchWin289DisplayModules } = require("../scripts/patch-bytecode.js");
+
+test("2.1.289 display source rewrites are anchored and keep identifiers", () => {
+  const input = 'const Le=D?"":" on"; action:"cycle",parens:!0,format:{keyCase:"lower"} action:"cycle",parens:!0,format:{keyCase:"lower"} const Eo=E?"to go back":"for agents"; action:"interrupt",format:{keyCase:"lower"} zn==="xhigh"?"xHigh":zn?sUt(zn):""," ","effort" zn===as?" (default)":"" action:"adjust" action:H?"set as default":"confirm" action:H?"set as default":"confirm" action:"use this session only" action:"list" action:"list" ' + 'action:"cancel" '.repeat(13) + 'fallback:"Esc",description:"cancel" '.repeat(6) + '"Select model" "[Pasted text #"';
+  const output = rewriteWin289DisplaySource(input, "chunk-bmzxbn1n.js", [
+    { en: "Select model", zh: "选择模型" },
+    { en: "[Pasted text #", zh: "[粘贴文本 #" },
+  ]);
+  assert.match(output.source, /强度：/);
+  assert.match(output.source, /action:"切换"/);
+  assert.match(output.source, /action:"仅本次会话使用"/);
+  assert.match(output.source, /"选择模型"/);
+  assert.match(output.source, /"\[Pasted text #"/);
+  assert.match(output.source, /fallback:"Esc"/);
+  assert.ok(!output.source.includes('" on"'));
+  assert.throws(() => rewriteWin289DisplaySource(input.replace('const Le=D?"":" on";', ''), "chunk-bmzxbn1n.js", []), /显示锚点不匹配/);
+});
+
+test("2.1.289 source fallback refuses unverified binaries without writing", () => {
+  const buffer = Buffer.alloc(64, 0x5a);
+  const before = Buffer.from(buffer);
+  assert.throws(() => patchWin289DisplayModules(buffer, { modulesPtr: { offset: 0, length: 0 } }, 52, [], {
+    format: "PE", version: "2.1.289", sourceHash: "0".repeat(64),
+  }), /指纹未经验证/);
+  assert.deepEqual(buffer, before);
+  assert.deepEqual(patchWin289DisplayModules(buffer, { modulesPtr: { offset: 0, length: 0 } }, 52, [], {
+    format: "ELF", version: "2.1.289", sourceHash: "0".repeat(64),
+  }), { sourceModules: 0, sourceReplacements: 0 });
+});
 
 function entry(text, wide = false) {
   const header = Buffer.alloc(8);

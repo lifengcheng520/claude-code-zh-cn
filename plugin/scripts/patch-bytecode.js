@@ -5,6 +5,7 @@
 // 保留 Bun 数据布局；备份、签名和启动验证完成后才替换用户的可执行文件。
 const fs = require("node:fs");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { execFileSync } = require("node:child_process");
 const io = require("../bun-binary-io.js");
 
@@ -184,6 +185,7 @@ const POOL_TRANSLATIONS = new Map([
   ["Reference for writing a ", "编写 "],
   [" tool script (script API and gotchas, resume, quality patterns, worked examples). Load before authoring a script for a workflow the user already opted into; it does not itself authorize running one.", " 工具脚本参考（API、恢复、质量要点和示例）。仅用于用户已选择的流程；查看说明不代表授权执行。"],
   ["for agents", "代理"],
+  ["Kept model as ", "沿用模型："],
   ["UserPromptSubmit operation blocked by hook:\n", "UserPromptSubmit 已拦截：\n"],
   ["UserPromptExpansion operation blocked by hook:\n", "扩展输入被 Hook 拦截：\n"],
   ["\n\nOriginal prompt: ", "\n\n原始输入："],
@@ -258,6 +260,110 @@ function readContainer(binaryPath) {
   return { ...parsed, bunData: Buffer.from(parsed.bunData) };
 }
 
+// Windows 2.1.289 的部分状态文字由 JS 片段动态拼接，常量池替换并不能
+// 改变正在执行的 bytecode。只在已核对 SHA-256 的构建中，使五个显示相关模块改用
+// 容器内原有源码；源码不扩容、不移动任何指针，也不修改执行指令或其他模块。
+const WIN289_SOURCE_SHA256 = "bcc6d9117aec30ad9414490302a25414359c871f5647e32e49b055c92bf84e0b";
+const WIN289_DISPLAY_REWRITES = new Map([
+  ["chunk-wyssf6qs.js", [
+    ['indicator:"manual mode"', 'indicator:"手动模式"', 1],
+    ['indicator:"plan mode"', 'indicator:"计划模式"', 1],
+    ['indicator:"accept edits"', 'indicator:"接受编辑"', 1],
+    ['indicator:"bypass permissions"', 'indicator:"绕过权限"', 1],
+    ['indicator:"don\'t ask"', 'indicator:"不询问"', 1],
+    ['indicator:"auto mode"', 'indicator:"自动模式"', 1],
+  ]],
+  ["chunk-bmzxbn1n.js", [
+    ['const Le=D?"":" on";', 'const Le=D?"":"";', 1],
+    ['action:"cycle",parens:!0,format:{keyCase:"lower"}', 'action:"切换",parens:!0,format:{keyCase:"lower"}', 2],
+    ['const Eo=E?"to go back":"for agents";', 'const Eo=E?"返回":"代理";', 1],
+    ['action:"interrupt",format:{keyCase:"lower"}', 'action:"中断",format:{keyCase:"lower"}', 1],
+    ['zn==="xhigh"?"xHigh":zn?sUt(zn):""," ","effort"', '"强度：",zn??""', 1],
+    ['zn===as?" (default)":""', 'zn===as?"（默认）":""', 1],
+    ['action:"adjust"', 'action:"调整"', 1],
+    ['action:H?"set as default":"confirm"', 'action:H?"设为默认":"确认"', 2],
+    ['action:"use this session only"', 'action:"仅本次会话使用"', 1],
+    ['action:"list"', 'action:"列表"', 2],
+    ['action:"cancel"', 'action:"取消"', 13],
+    ['fallback:"Esc",description:"cancel"', 'fallback:"Esc",description:"取消"', 6],
+  ]],
+  ["chunk-h0jzendc.js", [
+    ['["(",c," to ",s,")"]', '["(",c,"→",s,")"]', 1],
+    ['[c," to ",s]', '[c,"→",s]', 1],
+    ['`(${a} to ${o})`', '`(${a}→${o})`', 1],
+    ['`${a} to ${o}`', '`${a}→${o}`', 1],
+  ]],
+  ["chunk-k7a7t1rp.js", [
+    ['` with ${T8(AF(s))} effort`', '` · 强度：${T8(AF(s))}`', 1],
+  ]],
+  ["chunk-9y8h4cpv.js", [
+    ['"? for shortcuts"', '"? 快捷键"', 2],
+  ]],
+]);
+
+function rewriteWin289DisplaySource(source, moduleName, translations) {
+  const rewrites = WIN289_DISPLAY_REWRITES.get(moduleName);
+  if (!rewrites) throw new Error(`未知的 2.1.289 显示模块：${moduleName}`);
+  let changed = 0;
+  for (const [english, chinese, expected] of rewrites) {
+    const hits = source.split(english).length - 1;
+    if (hits !== expected) throw new Error(`${moduleName} 显示锚点不匹配：${english} (${hits}/${expected})`);
+    source = source.split(english).join(chinese);
+    changed += hits;
+  }
+
+  // 禁用 bytecode 后，该模块原来由常量池提供的中文会退回英文。把同一份主表
+  // 的精确字符串字面量应用到源码；跳过所有协议保护项。池内短译文仅用于槽宽
+  // 有限的常量池，不覆盖源码中的主表精选措辞。
+  const protectedText = new Set(translations.filter(t => t?.skipPatch).map(t => t.en));
+  const sourceTable = new Set(["chunk-wyssf6qs.js", "chunk-bmzxbn1n.js", "chunk-h0jzendc.js", "chunk-k7a7t1rp.js"]);
+  for (const { en, zh, skipPatch } of (sourceTable.has(moduleName) ? [...translations] : []).sort((a, b) => b.en.length - a.en.length)) {
+    if (skipPatch || protectedText.has(en) || PROTOCOL_FRAGMENTS.has(en) || LOGIC_CONSUMED_FRAGMENTS.has(en)) continue;
+    const literal = JSON.stringify(en);
+    const hits = source.split(literal).length - 1;
+    if (!hits) continue;
+    source = source.split(literal).join(JSON.stringify(zh));
+    changed += hits;
+  }
+  return { source, changed };
+}
+
+function patchWin289DisplayModules(bunData, bunOffsets, moduleStructSize, translations, { format, version, sourceHash }) {
+  if (format !== "PE" || version !== "2.1.289") return { sourceModules: 0, sourceReplacements: 0 };
+  if (sourceHash !== WIN289_SOURCE_SHA256) throw new Error("Windows 2.1.289 构建指纹未经验证，未改动文件");
+  if (moduleStructSize !== 52 || bunOffsets.modulesPtr.length % 52 !== 0) throw new Error("2.1.289 模块布局不匹配，未改动文件");
+  const seen = new Set();
+  let sourceReplacements = 0;
+  const { offset, length } = bunOffsets.modulesPtr;
+  for (let cursor = offset; cursor < offset + length; cursor += moduleStructSize) {
+    const nameStart = bunData.readUInt32LE(cursor);
+    const nameLength = bunData.readUInt32LE(cursor + 4);
+    const name = bunData.toString("utf8", nameStart, nameStart + nameLength);
+    const moduleName = path.basename(name);
+    if (!WIN289_DISPLAY_REWRITES.has(moduleName)) continue;
+    if (seen.has(moduleName) || !name.endsWith(`/root/${moduleName}`)) throw new Error(`2.1.289 模块名异常：${name}`);
+    seen.add(moduleName);
+    const sourceStart = bunData.readUInt32LE(cursor + 8);
+    const sourceLength = bunData.readUInt32LE(cursor + 12);
+    const bytecodeLength = bunData.readUInt32LE(cursor + 28);
+    if (!sourceLength || !bytecodeLength || bunData[cursor + 48] !== 1 || sourceStart + sourceLength > bunData.length) {
+      throw new Error(`2.1.289 模块属性异常：${moduleName}`);
+    }
+    const source = bunData.toString("latin1", sourceStart, sourceStart + sourceLength);
+    const result = rewriteWin289DisplaySource(source, moduleName, translations);
+    const replacement = Buffer.from(result.source, "utf8");
+    if (replacement.length > sourceLength) throw new Error(`2.1.289 源码占位不足：${moduleName} (+${replacement.length - sourceLength})`);
+    bunData.fill(0x20, sourceStart, sourceStart + sourceLength);
+    replacement.copy(bunData, sourceStart);
+    bunData.writeUInt32LE(0, cursor + 24); // 该模块改用源码，不改其他 bytecode。
+    bunData.writeUInt32LE(0, cursor + 28);
+    bunData[cursor + 48] = 0; // 源码从 Latin-1 改为 UTF-8。
+    sourceReplacements += result.changed;
+  }
+  if (seen.size !== WIN289_DISPLAY_REWRITES.size) throw new Error(`2.1.289 显示模块缺失：${[...WIN289_DISPLAY_REWRITES.keys()].filter(x => !seen.has(x)).join(", ")}`);
+  return { sourceModules: seen.size, sourceReplacements };
+}
+
 function patchBinary(binaryPath, translations, { dryRun = false, mainTableOnly = false } = {}) {
   binaryPath = fs.realpathSync(binaryPath);
   const version = io.readExecutableVersion(binaryPath);
@@ -265,19 +371,22 @@ function patchBinary(binaryPath, translations, { dryRun = false, mainTableOnly =
   const backupPath = binaryPath + ".zh-cn-backup";
   const sameVersionBackup = fs.existsSync(backupPath) && io.readExecutableVersion(backupPath) === version;
   const sourcePath = sameVersionBackup ? backupPath : binaryPath;
-  const { bunData, format } = readContainer(sourcePath);
+  const { bunData, format, bunOffsets, moduleStructSize } = readContainer(sourcePath);
   const original = fs.readFileSync(sourcePath);
+  const sourceHash = crypto.createHash("sha256").update(original).digest("hex");
   const payloadOffset = original.indexOf(bunData);
   if (payloadOffset < 0 || original.indexOf(bunData, payloadOffset + 1) !== -1) {
     throw new Error("无法唯一定位 Bun 数据，未改动文件");
   }
   const summary = patchStringPool(bunData, translations, { mainTableOnly });
-  if (dryRun) return { ...summary, version, mode: "dry-run" };
+  const sourceSummary = mainTableOnly ? { sourceModules: 0, sourceReplacements: 0 } :
+    patchWin289DisplayModules(bunData, bunOffsets, moduleStructSize, translations, { format, version, sourceHash });
+  if (dryRun) return { ...summary, ...sourceSummary, version, mode: "dry-run" };
   if (!summary.patched) throw new Error("没有命中可翻译的字节码条目，未改动文件");
   bunData.copy(original, payloadOffset);
   const current = fs.readFileSync(binaryPath);
   const currentPayload = current.subarray(payloadOffset, payloadOffset + bunData.length);
-  if (sameVersionBackup && currentPayload.equals(bunData)) return { ...summary, version, backup: backupPath, changed: false };
+  if (sameVersionBackup && currentPayload.equals(bunData)) return { ...summary, ...sourceSummary, version, backup: backupPath, changed: false };
 
   const tempDir = fs.mkdtempSync(path.join(path.dirname(binaryPath), ".zh-cn-bytecode-"));
   const candidate = path.join(tempDir, format === "PE" ? "claude.exe" : "claude");
@@ -289,7 +398,7 @@ function patchBinary(binaryPath, translations, { dryRun = false, mainTableOnly =
     if (!/[\u3400-\u9fff]/u.test(help)) throw new Error("汉化副本帮助界面未出现中文，未改动原文件");
     if (!sameVersionBackup) io.withWindowsFileRetry(() => fs.copyFileSync(binaryPath, backupPath));
     io.withWindowsFileRetry(() => fs.renameSync(candidate, binaryPath));
-    return { ...summary, version, backup: backupPath, changed: true };
+    return { ...summary, ...sourceSummary, version, backup: backupPath, changed: true };
   } finally {
     io.withWindowsFileRetry(() => fs.rmSync(tempDir, { recursive: true, force: true }));
   }
@@ -343,7 +452,7 @@ function main() {
   process.stdout.write(flags.includes("--json") ? JSON.stringify(result) + "\n" : String(result.patched) + "\n");
 }
 
-module.exports = { patchStringPool, patchBinary, restoreBinary, POOL_TRANSLATIONS };
+module.exports = { patchStringPool, patchBinary, restoreBinary, POOL_TRANSLATIONS, rewriteWin289DisplaySource, patchWin289DisplayModules };
 if (require.main === module) {
   try { main(); } catch (error) {
     process.stderr.write(`bytecode patch: ${error.message}\n`);

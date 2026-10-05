@@ -1,4 +1,4 @@
-# Claude Code 中文本地化 2.21.0：Windows 本地交付
+# Claude Code 中文本地化 2.21.1：Windows 本地交付
 
 本包只处理终端版 Claude Code。运行前请关闭所有正在使用 Claude Code 终端 EXE 的会话；桌面客户端和 VS Code 扩展不在处理范围内。
 
