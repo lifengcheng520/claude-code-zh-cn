@@ -92,3 +92,9 @@
 隔离 EXE 中逐项验证 `/code-review`、`/diff`、`/fast`、`/claude-api`、`/dataviz`、`/deep-research` 菜单说明显示中文；`[dynamic workflow]` 已在显示结构内改为 `[动态工作流]`，Ctrl+Y 提示改为中文。仅输入命令前缀观察菜单，未执行这些命令。`/english` 和 `/en` 的插件命令说明已修改，Hook 标识、命令名和禁用模型调用配置保留；实际安装后的用户命令副本待重装验证。
 
 候选 EXE SHA-256：`a9d25c159f168517e9cda23b36a1a26d9ac7e70e9755d1c39155f1d4ddd8f9c5`；池内替换 1340 处、5 个源码模块 / 355 处。版本与帮助自检通过。当前用户 Claude 会话仍在运行，尚未替换本机 EXE，等待退出后安装。技术名称、命令名及模型 ID 不翻译，未宣称所有菜单和动态内容均已覆盖。
+
+### 2.21.3 本机安装验收
+
+用户确认关闭后检查无 Claude 进程，备份旧版插件、设置、注册记录、启动器、EXE、英文备份和 receipt，再通过本地安装器更新。实际 EXE SHA-256 与 2.21.3 隔离候选一致；原版英文备份不变，settings.json 解析结果与安装前一致。doctor 返回 `ok=true`、`layer4State.code=partial`、`languageMode=zh-CN`。
+
+从本机安装入口新建 TTY 会话，直接观察 `/english`、`/en`、`/code-review`、`/deep-research` 菜单与 Ctrl+Y 提示均显示中文；验证后退出，没有执行这些命令。`/diff`、`/fast`、`/claude-api`、`/dataviz` 已在隔离副本逐项验证；其他动态界面不宣称全部覆盖。
