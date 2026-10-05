@@ -45,6 +45,8 @@
 
 随后在 `D:\程序\pyq` 的新 TTY 会话中，实际启动已安装的 2.1.289：启动页的 `API Usage Billing` 显示为 `API 计费`；输入 `/run` 后，`/run` 与 `/run-skill-generator` 菜单说明均显示中文。新会话输入 `/chinese` 时，Hook 拦截标题显示 `UserPromptSubmit 已拦截：`，尾行显示 `原始输入：/chinese`，不再是截图里的整句英文。用 Shift+Tab 切换权限模式时，状态栏仍出现 `auto mode on`、`manual mode on`、`plan mode on (shift+tab to cycle)` 等英文。这证明池内命中不能代表该渲染路径全部生效。另在隔离副本上等字节长度地替换源码镜像中的 `plan mode on`，版本/帮助自检虽然通过，真实交互仍未改变；未将这项无效实验纳入发布补丁，也未修改本机 EXE。
 
+用户从 `C:\Users\Luofc` 重新启动的终端截图再次证实同一边界：标题行已是 `API 计费`，但状态栏仍是 `auto mode on (shift+tab to cycle)`，模型旁仍有 `with max effort`。这不是旧进程未重启造成的残留；在未定位实际渲染常量或获得可验证的显示结构前，不把扫描命中数等同于该行已完成汉化。
+
 型号标识 `deepseek-flash[1M]` 与按键名 `shift+tab` 保持原样。`with max effort`、`(shift+tab to cycle)` 等动态组合仍未证明可安全原位替换，未作为本次完成项。
 
 11 个帮助面共 **41 条显示审计警告**，不是 41 个独立字符串：主帮助 2 条（动态拼接/参数取值），`mcp --help` 19 条（示例、get/list 说明和部分文案位于非可安全原位替换的结构），`plugin --help` 20 条（`eval` 长段说明跨池宽并含安全语义）。这些内容没有放宽校验或以短到失真的译文硬塞进字节码。
